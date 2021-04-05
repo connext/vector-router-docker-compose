@@ -1,0 +1,249 @@
+version: "3.8"
+
+services:
+
+  node:
+    container_name: node
+    image: connextproject/vector_node:$VECTOR_VERSION
+    restart: always
+    environment:
+      VECTOR_PROD: $VECTOR_PROD
+      # VECTOR_MNEMONIC: $VECTOR_MNEMONIC
+      # VECTOR_CONFIG: $VECTOR_CONFIG
+      VECTOR_DATABASE_URL: $NODE_VECTOR_DATABASE_URL
+      VECTOR_PG_HOST: $NODE_VECTOR_PG_HOST
+      VECTOR_PG_PORT: $NODE_VECTOR_PG_PORT
+      VECTOR_PG_DATABASE: $NODE_VECTOR_PG_DATABASE
+      VECTOR_PG_USERNAME: $NODE_VECTOR_PG_USERNAME
+      VECTOR_PG_PASSWORD: $NODE_VECTOR_PG_PASSWORD
+      VECTOR_PG_PASSWORD_FILE: $NODE_VECTOR_PG_PASSWORD_FILE
+    ports:
+      - $NODE_EXTERNAL_PORT:8000
+    volumes:
+      - ./data/vectorConfig/config.json:/app/config.json
+    depends_on:
+      - db-node
+    logging:
+      driver: json-file
+      options:
+          max-size: 10m
+    networks:
+      - vector
+
+  db-node:
+    container_name: db-node
+    image: connextproject/vector_database:$VECTOR_VERSION
+    restart: always
+    environment:
+      VECTOR_PROD: $VECTOR_PROD
+      VECTOR_ADMIN_TOKEN: $VECTOR_ADMIN_TOKEN
+      POSTGRES_DB: $NODE_VECTOR_PG_DATABASE
+      POSTGRES_USER: $NODE_VECTOR_PG_USERNAME
+      POSTGRES_PASSWORD: $NODE_VECTOR_PG_PASSWORD
+      POSTGRES_PASSWORD_FILE: $NODE_VECTOR_PG_PASSWORD_FILE
+      AWS_ACCESS_KEY_ID: $NODE_DB_AWS_ACCESS_KEY_ID
+      AWS_SECRET_ACCESS_KEY: $NODE_DB_AWS_SECRET_ACCESS_KEY
+    volumes:
+      - database_node:/var/lib/postgresql/data
+      - ./data/dbSnapshots/node:/root/snapshots
+    logging:
+      driver: json-file
+      options:
+          max-size: 10m
+    networks:
+      - vector
+
+################################################################################
+
+  router:
+    container_name: router
+    image: connextproject/vector_router:$VECTOR_VERSION
+    restart: always
+    environment:
+      VECTOR_PROD: $VECTOR_PROD
+      #  VECTOR_MNEMONIC: $VECTOR_MNEMONIC
+      # VECTOR_CONFIG: $VECTOR_CONFIG
+      VECTOR_NODE_URL: $ROUTER_VECTOR_NODE_URL
+      VECTOR_DATABASE_URL: $ROUTER_VECTOR_DATABASE_URL
+      VECTOR_PG_HOST: $ROUTER_VECTOR_PG_HOST
+      VECTOR_PG_PORT: $ROUTER_VECTOR_PG_PORT
+      VECTOR_PG_DATABASE: $ROUTER_VECTOR_PG_DATABASE
+      VECTOR_PG_USERNAME: $ROUTER_VECTOR_PG_USERNAME
+      VECTOR_PG_PASSWORD: $ROUTER_VECTOR_PG_PASSWORD
+      VECTOR_PG_PASSWORD_FILE: $ROUTER_VECTOR_PG_PASSWORD_FILE
+    ports:
+      - $ROUTER_EXTERNAL_PORT:8000
+    volumes:
+      - ./data/vectorConfig/config.json:/app/config.json
+    depends_on:
+      - db-router
+      - node
+    logging:
+      driver: json-file
+      options:
+          max-size: 10m
+    networks:
+      - vector
+
+  db-router:
+    container_name: db-router
+    image: connextproject/vector_database:$VECTOR_VERSION
+    restart: always
+    environment:
+      VECTOR_PROD: $VECTOR_PROD
+      VECTOR_ADMIN_TOKEN: $VECTOR_ADMIN_TOKEN
+      POSTGRES_DB: $ROUTER_VECTOR_PG_DATABASE
+      POSTGRES_USER: $ROUTER_VECTOR_PG_USERNAME
+      POSTGRES_PASSWORD: $ROUTER_VECTOR_PG_PASSWORD
+      POSTGRES_PASSWORD_FILE: $ROUTER_VECTOR_PG_PASSWORD_FILE
+      AWS_ACCESS_KEY_ID: $ROUTER_DB_AWS_ACCESS_KEY_ID
+      AWS_SECRET_ACCESS_KEY: $ROUTER_DB_AWS_SECRET_ACCESS_KEY
+    volumes:
+      - database_router:/var/lib/postgresql/data
+      - ./data/dbSnapshots/router:/root/snapshots
+    logging:
+      driver: json-file
+      options:
+          max-size: 10m
+    networks:
+      - vector
+
+################################################################################
+
+  logdna:
+    container_name: logdna
+    image: logdna/logspout:v1.2.0
+    restart: always
+    environment:
+      LOGDNA_KEY: $LOGDNA_KEY
+      TAGS: $LOGDNA_TAG
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    logging:
+      driver: json-file
+      options:
+          max-size: 10m
+    networks:
+      - vector
+
+################################################################################
+
+  prometheus:
+    container_name: prometheus
+    image: prom/prometheus:latest
+    restart: always
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=45d
+    # ports:
+    #   - 9090:9090
+    volumes:
+      - ./data/prometheusConfig/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./data/prometheusConfig/alert.rules.host:/etc/prometheus/alert.rules.host
+      - ./data/prometheusConfig/alert.rules.prod:/etc/prometheus/alert.rules.prod
+      - prometheus:/prometheus
+    logging:
+      driver: json-file
+      options:
+          max-size: 10m
+    networks:
+      - vector
+
+  grafana:
+    container_name: grafana
+    image: grafana/grafana:latest
+    restart: always
+    ports:
+      - $GRAFANA_EXTERNAL_PORT:3000
+    volumes:
+      - ./data/grafanaConfig/grafana:/etc/grafana
+      - ./data/grafanaConfig/dashboards:/etc/dashboards
+      - grafana:/var/lib/grafana
+    logging:
+      driver: json-file
+      options:
+          max-size: 10m
+    networks:
+      - vector
+
+  alertmanager:
+    container_name: alertmanager
+    image: prom/alertmanager:latest
+    restart: always
+    entrypoint: /entrypoint.sh
+    command:
+      - /bin/alertmanager
+      - --config.file=/etc/alertmanager/alertmanager.yml
+      - --storage.path=/alertmanager
+    environment:
+      SLACK_CHANNEL: $SLACK_CHANNEL
+      SLACK_USERNAME: $SLACK_USERNAME
+      SLACK_WEBHOOK: $SLACK_WEBHOOK
+    volumes:
+      - ./data/alertmanagerConfig/alertmanager.yml.tmpl:/etc/alertmanager/alertmanager.yml.tmpl
+      - ./data/alertmanagerConfig/notifications.tmpl:/etc/alertmanager/notifications.tmpl
+      - ./data/alertmanagerConfig/entrypoint.sh:/entrypoint.sh
+#    ports:
+#      - 9093:9093/tcp
+    logging:
+      driver: json-file
+      options:
+          max-size: 10m
+    networks:
+      - vector
+
+################################################################################
+
+  node-exporter:
+    container_name: node-exporter
+    image: prom/node-exporter:v1.1.2
+    restart: always
+    command:
+      - --path.procfs=/host/proc
+      - --path.sysfs=/host/sys
+      - --path.rootfs=/rootfs
+      - --collector.filesystem.ignored-mount-points
+      - ^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2|rootfs/run/docker/netns)(/)
+    cap_add:
+      - SYS_TIME
+    # ports:
+    #   - 9100:9100
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    logging:
+      driver: json-file
+      options:
+          max-size: 10m
+    networks:
+      - vector
+
+  cadvisor:
+    container_name: cadvisor
+    image: gcr.io/cadvisor/cadvisor:v0.39.0
+    restart: always
+    # ports:
+    #   - 8080:8080
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    logging:
+      driver: json-file
+      options:
+          max-size: 10m
+    networks:
+      - vector
+
+################################################################################
+
+networks:
+  vector:
+
+volumes:
+  database_node:
+  database_router:
+  prometheus:
+  grafana:

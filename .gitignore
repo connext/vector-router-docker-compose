@@ -1,0 +1,4 @@
+.env
+data/dbSnapshots/node/**
+data/dbSnapshots/router/**
+data/vectorConfig/**

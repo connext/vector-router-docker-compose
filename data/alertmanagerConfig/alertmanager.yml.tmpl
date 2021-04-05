@@ -1,0 +1,26 @@
+global:
+  resolve_timeout: 1m
+route:
+  receiver: 'slack'
+  group_wait: 10s
+  group_interval: 1m
+  repeat_interval: 30m
+  #group_by: [server]
+  routes:
+   - match:
+       server: PRODUCTION
+     receiver: 'slack'
+receivers:
+  - name: 'slack'
+    slack_configs:
+      - send_resolved: true
+        title: '{{ template "custom_slack_title" . }}'
+        text: '{{ template "custom_slack_message" . }}'
+        username: '${SLACK_USERNAME}'
+        channel: '#${SLACK_CHANNEL}'
+        api_url: '${SLACK_WEBHOOK}'
+        http_config:
+          tls_config:
+            insecure_skip_verify: true
+templates:
+  - /etc/alertmanager/notifications.tmpl
