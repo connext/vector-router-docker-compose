@@ -22,19 +22,21 @@ Connext vector router ready production using docker-compose
 - `SLACK_USERNAME` - Slack notification bot name
 - `SLACK_WEBHOOK` - Slack webhook full url (e.g. https://hooks.slack.com/services/A02BF5UDJLW/Z02BCDK26XN/FlUo3skWo6Xc0vNnahr43tER)
 
-2. Run Docker image
+2. Create Vector configuration file `data/vectorConfig/config.json`, it will be mounted into node and router containers.
+
+3. Run Docker image
 ```
 docker-compose up -d
 ```
 
-3. Check the status
+4. Check the status
 ```
 docker-compose ps
 OR
 docker ps -a
 ```
 
-4. Check the logs
+5. Check the logs
 ```
 docker-compose logs
 OR
@@ -51,7 +53,7 @@ docker logs db-node
 docker logs db-router
 ```
 
-5. Stop and delete containers
+6. Stop and delete containers
 ```
 docker-compose down
 ```
