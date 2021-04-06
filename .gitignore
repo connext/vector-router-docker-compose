@@ -1,4 +1,4 @@
 .env
-data/dbSnapshots/node/**
-data/dbSnapshots/router/**
-data/vectorConfig/**
+data/dbSnapshots/node/*.sql
+data/dbSnapshots/router/*.sql
+data/vectorConfig/*.json
