@@ -53,59 +53,6 @@ services:
 
 ################################################################################
 
-  router:
-    container_name: router
-    image: connextproject/vector_router:$VECTOR_VERSION
-    restart: always
-    environment:
-      VECTOR_PROD: $VECTOR_PROD
-      VECTOR_NODE_URL: $ROUTER_VECTOR_NODE_URL
-      VECTOR_DATABASE_URL: $ROUTER_VECTOR_DATABASE_URL
-      VECTOR_PG_HOST: $ROUTER_VECTOR_PG_HOST
-      VECTOR_PG_PORT: $ROUTER_VECTOR_PG_PORT
-      VECTOR_PG_DATABASE: $ROUTER_VECTOR_PG_DATABASE
-      VECTOR_PG_USERNAME: $ROUTER_VECTOR_PG_USERNAME
-      VECTOR_PG_PASSWORD: $ROUTER_VECTOR_PG_PASSWORD
-      VECTOR_PG_PASSWORD_FILE: $ROUTER_VECTOR_PG_PASSWORD_FILE
-    ports:
-      - $ROUTER_EXTERNAL_PORT:8000
-    volumes:
-      - ./data/vectorConfig/config.json:/app/config.json
-    depends_on:
-      - db-router
-      - node
-    logging:
-      driver: json-file
-      options:
-          max-size: 10m
-    networks:
-      - vector
-
-  db-router:
-    container_name: db-router
-    image: connextproject/vector_database:$VECTOR_VERSION
-    restart: always
-    environment:
-      VECTOR_PROD: $VECTOR_PROD
-      VECTOR_ADMIN_TOKEN: $VECTOR_ADMIN_TOKEN
-      POSTGRES_DB: $ROUTER_VECTOR_PG_DATABASE
-      POSTGRES_USER: $ROUTER_VECTOR_PG_USERNAME
-      POSTGRES_PASSWORD: $ROUTER_VECTOR_PG_PASSWORD
-      POSTGRES_PASSWORD_FILE: $ROUTER_VECTOR_PG_PASSWORD_FILE
-      AWS_ACCESS_KEY_ID: $ROUTER_DB_AWS_ACCESS_KEY_ID
-      AWS_SECRET_ACCESS_KEY: $ROUTER_DB_AWS_SECRET_ACCESS_KEY
-    volumes:
-      - database_router:/var/lib/postgresql/data
-      - ./data/dbSnapshots/router:/root/snapshots
-    logging:
-      driver: json-file
-      options:
-          max-size: 10m
-    networks:
-      - vector
-
-################################################################################
-
   logdna:
     container_name: logdna
     image: logdna/logspout:v1.2.0
@@ -240,6 +187,5 @@ networks:
 
 volumes:
   database_node:
-  database_router:
   prometheus:
   grafana:
