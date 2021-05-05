@@ -26,6 +26,7 @@ git clone https://github.com/connext/vector-router-docker-compose.git
 - `NODE_VECTOR_PG_PASSWORD`, `ROUTER_VECTOR_PG_PASSWORD` - set secure password for databases
 
 3. (Optional) Modify `.env` file and set alert notifications to Slack or Discord.
+
 For Slack set:
 - `SLACK_ENABLE=true`
 - `SLACK_CHANNEL` - name of slack channel for alerts
@@ -35,7 +36,9 @@ For Slack set:
 For Discord set:
 - `SLACK_ENABLE=false`
 - `DISCORD_WEBHOOK` - Discord webhook full url
+
 Modify `docker-compose.yml` file and uncomment (remove #) for all `alertmanager-discord` section.
+
 Note: for Discord notifications used two containers `alertmanager` and `alertmanager-discord`
 
 4. Create Vector configuration file `~/vector-router-docker-compose/data/vectorConfig/config.json`, it will be mounted into node and router containers. See [Connext docs](https://docs.connext.network/configuring-a-router) for configuration description.
