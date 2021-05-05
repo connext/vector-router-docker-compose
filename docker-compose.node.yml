@@ -78,8 +78,6 @@ services:
     command:
       - --config.file=/etc/prometheus/prometheus.yml
       - --storage.tsdb.retention.time=45d
-    # ports:
-    #   - 9090:9090
     volumes:
       - ./data/prometheusConfig/prometheus.yml:/etc/prometheus/prometheus.yml
       - ./data/prometheusConfig/alert.rules.host:/etc/prometheus/alert.rules.host
@@ -111,29 +109,32 @@ services:
 
   alertmanager:
     container_name: alertmanager
-    image: prom/alertmanager:latest
+    image: connextproject/alertmanager:0.21.0
     restart: always
-    entrypoint: /entrypoint.sh
-    command:
-      - /bin/alertmanager
-      - --config.file=/etc/alertmanager/alertmanager.yml
-      - --storage.path=/alertmanager
     environment:
+      SLACK_ENABLE: $SLACK_ENABLE
       SLACK_CHANNEL: $SLACK_CHANNEL
       SLACK_USERNAME: $SLACK_USERNAME
       SLACK_WEBHOOK: $SLACK_WEBHOOK
-    volumes:
-      - ./data/alertmanagerConfig/alertmanager.yml.tmpl:/etc/alertmanager/alertmanager.yml.tmpl
-      - ./data/alertmanagerConfig/notifications.tmpl:/etc/alertmanager/notifications.tmpl
-      - ./data/alertmanagerConfig/entrypoint.sh:/entrypoint.sh
-#    ports:
-#      - 9093:9093/tcp
     logging:
       driver: json-file
       options:
           max-size: 10m
     networks:
       - vector
+
+#  alertmanager-discord:
+#    container_name: alertmanager-discord
+#    image: benjojo/alertmanager-discord
+#    restart: always
+#    environment:
+#      DISCORD_WEBHOOK: $DISCORD_WEBHOOK
+#    logging:
+#      driver: json-file
+#      options:
+#          max-size: 10m
+#    networks:
+#      - vector
 
 ################################################################################
 
@@ -149,8 +150,6 @@ services:
       - ^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2|rootfs/run/docker/netns)(/)
     cap_add:
       - SYS_TIME
-    # ports:
-    #   - 9100:9100
     volumes:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
@@ -166,8 +165,6 @@ services:
     container_name: cadvisor
     image: gcr.io/cadvisor/cadvisor:v0.39.0
     restart: always
-    # ports:
-    #   - 8080:8080
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:rw
