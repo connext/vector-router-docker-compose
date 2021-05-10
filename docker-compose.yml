@@ -43,7 +43,7 @@ services:
       AWS_SECRET_ACCESS_KEY: $NODE_DB_AWS_SECRET_ACCESS_KEY
     volumes:
       - database_node:/var/lib/postgresql/data
-      - ./data/dbSnapshots/node:/root/snapshots
+      - ./data/dbSnapshots/node:/postgres/snapshots
     logging:
       driver: json-file
       options:
@@ -96,7 +96,7 @@ services:
       AWS_SECRET_ACCESS_KEY: $ROUTER_DB_AWS_SECRET_ACCESS_KEY
     volumes:
       - database_router:/var/lib/postgresql/data
-      - ./data/dbSnapshots/router:/root/snapshots
+      - ./data/dbSnapshots/router:/postgres/snapshots
     logging:
       driver: json-file
       options:
@@ -135,6 +135,7 @@ services:
       - ./data/prometheusConfig/prometheus.yml:/etc/prometheus/prometheus.yml
       - ./data/prometheusConfig/alert.rules.host:/etc/prometheus/alert.rules.host
       - ./data/prometheusConfig/alert.rules.prod:/etc/prometheus/alert.rules.prod
+      # - ./data/prometheusConfig/alert.rules.router:/etc/prometheus/alert.rules.router
       - prometheus:/prometheus
     logging:
       driver: json-file
